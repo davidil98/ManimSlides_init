@@ -15,6 +15,11 @@ from .canvas import (
 )
 from .video import VideoMobject
 from .graphs import ManimGraph
+from .chemistry import (
+    mol_to_image,
+    dm_mol_to_image,
+    mols_to_grid_image,
+)
 
 __all__ = [
     "SlidesControl",
@@ -24,4 +29,7 @@ __all__ = [
     "HOME",
     "VideoMobject",
     "ManimGraph",
+    "mol_to_image",
+    "dm_mol_to_image",
+    "mols_to_grid_image",
 ]

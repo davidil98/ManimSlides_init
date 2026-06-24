@@ -11,25 +11,7 @@ Ensamblado final:
     manim-slides convert Introduccion Estructura Funcionamiento Conclusion salida.html
 """
 
-from manim import (
-    BLUE,
-    BulletedList,
-    Circle,
-    config,
-    DL,
-    Dot,
-    DOWN,
-    FadeIn,
-    FadeOut,
-    Rectangle,
-    RIGHT,
-    Text,
-    Title,
-    UL,
-    WHITE,
-    Write,
-    YELLOW,
-)
+from manim import *
 from manim_slides import Slide
 
 from toolkit import NORMAL_SIZE, SlidesControl, TITLE_SIZE

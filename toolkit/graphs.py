@@ -13,17 +13,7 @@ Uso:
 """
 
 import numpy as np
-from manim import (
-    Axes,
-    DEGREES,
-    DOWN,
-    GREY,
-    LEFT,
-    Tex,
-    UL,
-    UR,
-    VGroup,
-)
+from manim import *
 from scipy.signal import savgol_filter
 
 

@@ -20,7 +20,7 @@ python scripts/workflow.py export html salida.html --open
 ## Estructura del proyecto
 
 ```
-egofets/
+ManimSlides_init/
 ├── presentacion.py          # Clases Slide de la presentación
 ├── scripts/workflow.py      # CLI para render/present/export
 ├── toolkit/                 # Utilidades reutilizables
@@ -33,7 +33,7 @@ egofets/
 │   ├── 02_video_en_escena.ipynb
 │   ├── 03_graficos_espectros.ipynb
 │   └── 04_estructuras_quimicas.ipynb  # pendiente
-├── egofets_test.ipynb       # Experimentación libre
+├── test.ipynb       # Experimentación libre
 ├── slides/                  # Generado, ignorado por git
 └── media/                   # Generado, ignorado por git
 ```
@@ -161,23 +161,153 @@ Las demás escenas siguen listas para presentar.
 
 ## Instalación
 
+Este proyecto requiere **LaTeX**, **FFmpeg** y dependencias gráficas.
+
+### Dependencias del sistema (Linux)
+
+`manimpango` (necesario para manim) no tiene wheels pre-compiladas para Linux.
+Antes de instalar los paquetes Python, necesitas:
+
 ```bash
-conda activate manim
+# Ubuntu/Debian
+sudo apt install libpango1.0-dev pkg-config python3-dev
 
-# Dependencias del visor interactivo
-conda install -c conda-forge pyside6 qt6-multimedia -y
+# Arch Linux
+sudo pacman -S python-pip python-setuptools pkg-config cairo pango
 
-# Manim Slides + soporte Jupyter
-pip install "manim-slides[magic]"
+# Fedora
+sudo dnf install pango-devel pkg-config python3-devel redhat-rpm-config
 ```
 
-Requiere `manim>=0.19` y `manimpango>=0.6.1`.
+Luego puedes instalar `manimpango` con:
+
+```bash
+pip install manimpango
+# o con conda:
+conda install -c conda-forge manimpango
+```
+
+### Opción 1: Conda (sin LaTeX, ya lo tienes instalado)
+
+Si ya tienes LaTeX por separado y prefieres conda solo para las dependencias Python:
+
+```bash
+conda env create -f environment.yml
+conda activate manim
+```
+
+### Opción 2: Conda (con LaTeX incluido)
+
+Si prefieres que conda maneje todo, incluyendo LaTeX:
+
+```bash
+conda env create -f environment.yml
+conda install -c conda-forge texlive-core -y
+conda activate manim
+```
+
+### Opción 3: uv + pyproject.toml
+
+Si prefieres un entorno más ligero con uv:
+
+```bash
+# 1. Instalar uv (si no lo tienes)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Crear entorno virtual e instalar dependencias
+uv venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+
+# 3. Instalar manimpango primero (requiere las dependencias del sistema, ver arriba)
+pip install manimpango
+
+# 4. Instalar el resto desde pyproject.toml
+uv pip install -e .
+
+# 5. Dependencias del sistema (LaTeX, FFmpeg, etc.):
+#    - Con conda:
+conda install -c conda-forge ffmpeg texlive-core pycairo pango cairo pyside6 qt6-multimedia -y
+#    - En Arch:
+sudo pacman -S ffmpeg texlive-most pycairo pango cairo qt6-multimedia
+#    - En Ubuntu/Debian:
+sudo apt install ffmpeg texlive texlive-latex-extra pycairo libcairo2-dev libpango1.0-dev qt6-multimedia-dev
+```
+
+### Opción 4: Solo pip
+
+Si prefieres pip sin gestores de entorno:
+
+```bash
+# 1. Instalar manimpango primero (requiere las dependencias del sistema, ver arriba)
+pip install manimpango
+
+# 2. Instalar el resto
+pip install manim "manim-slides[magic]" opencv-python scipy pillow jupyter notebook ipykernel
+```
+
+### Verificar instalación
+
+```bash
+manim --version
+manim-slides --version
+jupyter --version
+```
+
+## Usar como template
+
+Puedes usar este repositorio como base para nuevas presentaciones de dos formas:
+
+### Opción A: "Use this template" (proyectos independientes)
+
+En GitHub, haz click en **"Use this template"** para crear un repositorio nuevo independiente. Recibirás una copia limpia sin historial git.
+
+### Opción B: git clone (para recibir actualizaciones)
+
+Si quieres poder recibir actualizaciones de este repositorio original:
+
+```bash
+# 1. Clonar tu fork o el repositorio original
+git clone https://github.com/tu-user/tu-presentacion.git
+cd tu-presentacion
+
+# 2. Agregar este repositorio como upstream
+git remote add upstream https://github.com/david-ibarra/ManimSlides_init.git
+
+# 3. (Opcional) Verificar los remotes
+git remote -v
+
+# Para recibir actualizaciones futuras:
+git fetch upstream
+git merge upstream/main
+# Resuelve conflictos manualmente si los hay
+
+# 4. (Opcional) Mantener tu fork actualizado
+git push origin main
+```
 
 ## Galería
 
-Notebooks de ejemplo en `gallery/`:
+Ejemplos en `gallery/`. Cada demo tiene **dos versiones**:
 
-- `01_canvas_y_zoom.ipynb`: `SlidesControl` con `ZoomedScene`.
-- `02_video_en_escena.ipynb`: `VideoMobject` insertando un video.
-- `03_graficos_espectros.ipynb`: `ManimGraph` graficando datos.
-- `04_estructuras_quimicas.ipynb`: pendiente de poblar.
+- `.ipynb`: notebook con `%%manim_slides` (solo funciona en Jupyter).
+- `.py`: script ejecutable con `manim-slides render` (funciona siempre).
+
+| Demo | Notebook | Script | Qué muestra |
+|------|----------|--------|-------------|
+| Canvas y zoom | `01_canvas_y_zoom.ipynb` | `01_canvas_y_zoom.py` | `SlidesControl` con `wipe()` y `ZoomedScene` |
+| Video | `02_video_en_escena.ipynb` | `02_video_en_escena.py` | `VideoMobject` reproduciendo un .mp4 |
+| Espectros | `03_graficos_espectros.ipynb` | `03_graficos_espectros.py` | `ManimGraph` con suavizado Savitzky-Golay |
+| Química | `04_estructuras_quimicas.ipynb` | `04_estructuras_quimicas.py` | RDKit/Datamol generando imágenes 2D |
+
+### Ejecutar un demo como script
+
+```bash
+manim-slides render gallery/01_canvas_y_zoom.py DemoCanvasZoom -ql
+manim-slides DemoCanvasZoom
+```
+
+### Ejecutar un demo en Jupyter
+
+Abre el notebook, ejecuta la celda de imports, y la celda con `%%manim_slides`.
+La celda mágica **solo produce el iframe con la presentación** dentro del navegador de Jupyter.
