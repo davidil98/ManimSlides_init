@@ -1,48 +1,92 @@
-# Toolkit de presentaciones Manim Slides
+# Toolkit de presentaciones Manim Slides (monorepo)
 
-Estructura base para crear presentaciones tipo RevealJS con animaciones de Manim.
+Monorepo para crear y mantener **múltiples presentaciones tipo RevealJS con
+animaciones de Manim**. Cada presentación vive en su propia subcarpeta, con
+sus `slides/`, `media/` y figuras aisladas, compartiendo un `toolkit/`
+común y un `workflow.py` unificado.
 
 ## Inicio rápido
 
 ```bash
 conda activate manim
 
-# 1. Renderizar todas las escenas (calidad baja para iterar)
-python scripts/workflow.py render-all -q l
+# 1. Ver qué presentaciones hay registradas
+python scripts/workflow.py presentations
 
-# 2. Visualizar interactivamente
-python scripts/workflow.py present Introduccion Estructura
+# 2. Listar las escenas de una presentación concreta
+python scripts/workflow.py list --file presentaciones/2025-david_ICMAB/david_presentation.py
 
-# 3. Exportar producto final
-python scripts/workflow.py export html salida.html --open
+# 3. Renderizar todas las escenas de una presentación (calidad baja para iterar)
+python scripts/workflow.py render-all --file presentaciones/2025-david_ICMAB/david_presentation.py -q l
+
+# 4. Visualizar interactivamente
+python scripts/workflow.py present --file presentaciones/2025-david_ICMAB/david_presentation.py Introduccion
+
+# 5. Exportar producto final
+python scripts/workflow.py export --file presentaciones/2025-david_ICMAB/david_presentation.py html salida.html Introduccion --open
 ```
+
+Si omites `--file`, los subcomandos `render-all` y `list` operan sobre
+**todas** las presentaciones registradas en `presentaciones.yaml` (o
+descubiertas por convención si el YAML no existe).
 
 ## Estructura del proyecto
 
 ```
-ManimSlides_init/
-├── presentacion.py          # Clases Slide de la presentación
-├── scripts/workflow.py      # CLI para render/present/export
-├── toolkit/                 # Utilidades reutilizables
-│   ├── canvas.py            # SlidesControl, constantes
-│   ├── video.py             # VideoMobject
-│   ├── graphs.py            # ManimGraph
-│   └── chemistry.py         # (pendiente) estructuras químicas
-├── gallery/                 # Notebooks demo de cada herramienta
-│   ├── 01_canvas_y_zoom.ipynb
-│   ├── 02_video_en_escena.ipynb
-│   ├── 03_graficos_espectros.ipynb
-│   └── 04_estructuras_quimicas.ipynb  # pendiente
-├── test.ipynb       # Experimentación libre
-├── slides/                  # Generado, ignorado por git
-└── media/                   # Generado, ignorado por git
+.
+├── presentacion.py              # Ejemplo de referencia (no se renderiza en uso normal)
+├── presentaciones.yaml          # Registro de presentaciones
+├── presentaciones/
+│   └── <evento>-<autor>/        # Una carpeta autocontenida por presentación
+│       ├── <archivo>.py         # Clases Slide de la presentación
+│       ├── slides/              # Generado, ignorado por git
+│       ├── media/               # Generado, ignorado por git
+│       └── figures/             # (opcional) datos, videos, imágenes locales
+├── scripts/workflow.py          # CLI unificado: presentations/list/render-all/present/export
+├── toolkit/                     # Utilidades reutilizables (compartido)
+│   ├── canvas.py                # SlidesControl, constantes
+│   ├── video.py                 # VideoMobject
+│   ├── graphs.py                # ManimGraph
+│   └── chemistry.py             # mol_to_image, mols_to_grid_image
+├── gallery/                     # Notebooks y scripts demo de cada herramienta
+│   ├── 01_canvas_y_zoom.{ipynb,py}
+│   ├── 02_video_en_escena.{ipynb,py}
+│   ├── 03_graficos_espectros.{ipynb,py}
+│   └── 04_estructuras_quimicas.{ipynb,py}
+├── test.ipynb                   # Experimentación libre
+├── environment.yml
+├── pyproject.toml
+└── README.md
 ```
 
-## Flujo de trabajo
+## Crear una nueva presentación
 
-### 1. Diseñar escenas en `presentacion.py`
+```bash
+# 1. Crear la carpeta bajo presentaciones/
+mkdir presentaciones/2026-mi-conferencia
+cp presentacion.py presentaciones/2026-mi-conferencia/mi_presentacion.py
 
-Cada sección es una clase `Slide` (simple) o `SlidesControl` (con canvas persistente).
+# 2. Editar el archivo: renombrar clases y contenido
+$EDITOR presentaciones/2026-mi-conferencia/mi_presentacion.py
+
+# 3. Registrar la presentación (opcional: el workflow también la descubre por convención)
+$EDITOR presentaciones.yaml   # añadir entrada en `presentaciones:`
+
+# 4. Verificar que la detectó
+python scripts/workflow.py presentations
+python scripts/workflow.py list --file presentaciones/2026-mi-conferencia/mi_presentacion.py
+```
+
+Los artefactos (`slides/`, `media/`) se generan dentro de la subcarpeta de
+la presentación, así que cada build queda aislado y se puede ignorar por
+git sin afectar a las demás.
+
+## Flujo de trabajo por presentación
+
+### 1. Diseñar escenas en `presentaciones/<carpeta>/<archivo>.py`
+
+Cada sección es una clase `Slide` (simple) o `SlidesControl` (con canvas
+persistente).
 
 ```python
 from manim_slides import Slide
@@ -66,36 +110,38 @@ class ConCanvas(SlidesControl):
 
 ```bash
 # Solo la escena en la que estás trabajando
-manim-slides render presentacion.py Introduccion -ql
+manim-slides render presentaciones/2026-mi-conferencia/mi_presentacion.py Introduccion -ql
 manim-slides Introduccion
-
-# O desde el script
-python scripts/workflow.py render-all -q l
 ```
+
+(Ojo: para invocar `manim-slides` directamente fuera del workflow.py, debes
+hacerlo desde la carpeta de la presentación, porque `slides/` y `media/` se
+generan relativos al `cwd`.)
 
 ### 3. Ensamblar sin re-renderizar
 
 ```bash
-manim-slides Introduccion Estructura Funcionamiento Conclusion
+python scripts/workflow.py present --file presentaciones/2026-mi-conferencia/mi_presentacion.py Introduccion Estructura Conclusion
 ```
 
 ### 4. Exportar producto final
 
 ```bash
 # HTML (RevealJS)
-manim-slides convert Introduccion Estructura Conclusion salida.html --open
+python scripts/workflow.py export --file presentaciones/2026-mi-conferencia/mi_presentacion.py html salida.html Introduccion Estructura Conclusion --open
 
 # PowerPoint
-manim-slides convert Introduccion Estructura Conclusion salida.pptx
+python scripts/workflow.py export --file presentaciones/2026-mi-conferencia/mi_presentacion.py pptx salida.pptx Introduccion Estructura Conclusion
 
 # PDF / ZIP
-manim-slides convert Introduccion Conclusion salida.pdf
-manim-slides convert Introduccion Conclusion salida.zip
+python scripts/workflow.py export --file presentaciones/2026-mi-conferencia/mi_presentacion.py pdf salida.pdf Introduccion Conclusion
+python scripts/workflow.py export --file presentaciones/2026-mi-conferencia/mi_presentacion.py zip salida.zip Introduccion Conclusion
 ```
 
 ## Toolkit
 
-Re-exportado en `toolkit/__init__.py` para import simple:
+Re-exportado en `toolkit/__init__.py` para import simple desde cualquier
+presentación:
 
 ```python
 from toolkit import (
@@ -117,7 +163,7 @@ from toolkit import (
 | `SlidesControl` | Presentación larga con número visible y título entre slides. |
 | `VideoMobject` | Incrustar un `.mp4` en la escena. |
 | `ManimGraph` | Graficar datos espectroscópicos desde archivos de 2 columnas. |
-| `chemistry.py` | (Pendiente) dibujar estructuras moleculares. |
+| `chemistry.py` | Dibujar estructuras moleculares con RDKit/Datamol. |
 
 ## Tips
 
@@ -130,11 +176,12 @@ from toolkit import (
 
 ### Renderizado selectivo
 
-Cada `Slide` se renderiza a un archivo `.json` independiente en `slides/`.
-Si modificas una escena, solo re-renderiza esa:
+Cada `Slide` se renderiza a un archivo `.json` independiente en
+`presentaciones/<carpeta>/slides/`. Si modificas una escena, solo
+re-renderiza esa:
 
 ```bash
-manim-slides render presentacion.py Estructura
+python scripts/workflow.py render-all --file presentaciones/2026-mi-conferencia/mi_presentacion.py -q l
 ```
 
 Las demás escenas siguen listas para presentar.
@@ -158,6 +205,33 @@ Las demás escenas siguen listas para presentar.
 | `-qh` | 1080p | 60 | Producto final |
 | `-qp` | 1440p | 60 | Alta calidad |
 | `-qk` | 2160p | 60 | 4K |
+
+## Galería
+
+Ejemplos en `gallery/`. Cada demo tiene **dos versiones**:
+
+- `.ipynb`: notebook con `%%manim_slides` (solo funciona en Jupyter).
+- `.py`: script ejecutable con `manim-slides render` (funciona siempre).
+
+| Demo | Notebook | Script | Qué muestra |
+|------|----------|--------|-------------|
+| Canvas y zoom | `01_canvas_y_zoom.ipynb` | `01_canvas_y_zoom.py` | `SlidesControl` con `wipe()` y `ZoomedScene` |
+| Video | `02_video_en_escena.ipynb` | `02_video_en_escena.py` | `VideoMobject` reproduciendo un .mp4 |
+| Espectros | `03_graficos_espectros.ipynb` | `03_graficos_espectros.py` | `ManimGraph` con suavizado Savitzky-Golay |
+| Química | `04_estructuras_quimicas.ipynb` | `04_estructuras_quimicas.py` | RDKit/Datamol generando imágenes 2D |
+
+### Ejecutar un demo como script
+
+```bash
+# Ojo: demos van con manim-slides directo (no con workflow.py)
+manim-slides render gallery/01_canvas_y_zoom.py DemoCanvasZoom -ql
+manim-slides DemoCanvasZoom
+```
+
+### Ejecutar un demo en Jupyter
+
+Abre el notebook, ejecuta la celda de imports, y la celda con `%%manim_slides`.
+La celda mágica **solo produce el iframe con la presentación** dentro del navegador de Jupyter.
 
 ## Instalación
 
@@ -254,60 +328,23 @@ manim-slides --version
 jupyter --version
 ```
 
-## Usar como template
+## Usar como base para tu propio monorepo
 
-Puedes usar este repositorio como base para nuevas presentaciones de dos formas:
+En GitHub, haz click en **"Use this template"** para crear tu propio monorepo
+de presentaciones. Recibirás una copia limpia sin historial git y podrás
+añadir tus propias subcarpetas en `presentaciones/` y entradas en
+`presentaciones.yaml`.
 
-### Opción A: "Use this template" (proyectos independientes)
-
-En GitHub, haz click en **"Use this template"** para crear un repositorio nuevo independiente. Recibirás una copia limpia sin historial git.
-
-### Opción B: git clone (para recibir actualizaciones)
-
-Si quieres poder recibir actualizaciones de este repositorio original:
+Si prefieres mantenerte sincronizado con este repositorio original, clónalo
+y añádelo como upstream:
 
 ```bash
-# 1. Clonar tu fork o el repositorio original
-git clone https://github.com/tu-user/tu-presentacion.git
-cd tu-presentacion
-
-# 2. Agregar este repositorio como upstream
+git clone https://github.com/tu-user/mi-monorepo-presentaciones.git
+cd mi-monorepo-presentaciones
 git remote add upstream https://github.com/david-ibarra/ManimSlides_init.git
-
-# 3. (Opcional) Verificar los remotes
-git remote -v
 
 # Para recibir actualizaciones futuras:
 git fetch upstream
 git merge upstream/main
 # Resuelve conflictos manualmente si los hay
-
-# 4. (Opcional) Mantener tu fork actualizado
-git push origin main
 ```
-
-## Galería
-
-Ejemplos en `gallery/`. Cada demo tiene **dos versiones**:
-
-- `.ipynb`: notebook con `%%manim_slides` (solo funciona en Jupyter).
-- `.py`: script ejecutable con `manim-slides render` (funciona siempre).
-
-| Demo | Notebook | Script | Qué muestra |
-|------|----------|--------|-------------|
-| Canvas y zoom | `01_canvas_y_zoom.ipynb` | `01_canvas_y_zoom.py` | `SlidesControl` con `wipe()` y `ZoomedScene` |
-| Video | `02_video_en_escena.ipynb` | `02_video_en_escena.py` | `VideoMobject` reproduciendo un .mp4 |
-| Espectros | `03_graficos_espectros.ipynb` | `03_graficos_espectros.py` | `ManimGraph` con suavizado Savitzky-Golay |
-| Química | `04_estructuras_quimicas.ipynb` | `04_estructuras_quimicas.py` | RDKit/Datamol generando imágenes 2D |
-
-### Ejecutar un demo como script
-
-```bash
-manim-slides render gallery/01_canvas_y_zoom.py DemoCanvasZoom -ql
-manim-slides DemoCanvasZoom
-```
-
-### Ejecutar un demo en Jupyter
-
-Abre el notebook, ejecuta la celda de imports, y la celda con `%%manim_slides`.
-La celda mágica **solo produce el iframe con la presentación** dentro del navegador de Jupyter.
